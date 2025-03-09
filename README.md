@@ -8,6 +8,14 @@ This project fine-tunes **BERT-based models (BERT & HateBERT)** for **multi-leve
 
 The model also extracts **attention scores** to **highlight the most important words** contributing to the classification.  
 
+## 📌 Dependencies
+This project requires the following libraries to be installed:
+- Pandas
+- PyTorch
+- Numpy
+- Scikit-Learn
+- Transformers
+
 ---
 
 ## 📌 1. Model Architecture & Methodology
@@ -75,8 +83,12 @@ The model also extracts **attention scores** to **highlight the most important w
 
 ## 📌 5. How to Use the Model
 
+### Downloading the trained model: [Google Drive Link](https://drive.google.com/drive/folders/1pn04bhOr_pk7BUy-BIjO_eY4hh-KbX6E?usp=sharing)
+
 ### **5.1 Running the Flask API**
 1. **Clone the Repository**
    ```sh
    git clone https://github.com/SuroBuro/BERT-Misogyny-Checker.git
    cd BERT-Misogyny-Checker
+2. **Setting the File Path for the model in the script app.py**
+3. **Running the flask server locally**
