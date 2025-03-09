@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misogyny Detection Chat</title>
+    <style>
+        @keyframes glow {
+            0% { box-shadow: 0 0 5px #007bff; }
+            50% { box-shadow: 0 0 20px #007bff; }
+            100% { box-shadow: 0 0 5px #007bff; }
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #0f0f0f, #1c1c1c);
+            margin: 0;
+            color: white;
+        }
+
+        .chat-container {
+            width: 450px;
+            max-width: 90%;
+            background: rgba(30, 30, 30, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 123, 255, 0.3);
+            display: flex;
+            flex-direction: column;
+            border: 2px solid #007bff;
+            animation: glow 2s infinite alternate;
+        }
+
+        .chat-box {
+            height: 400px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            border-bottom: 2px solid #007bff;
+            scrollbar-width: thin;
+            scrollbar-color: #007bff #222;
+        }
+
+        .chat-box::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-box::-webkit-scrollbar-thumb {
+            background: #007bff;
+            border-radius: 10px;
+        }
+
+        .user-message, .bot-message {
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            max-width: 80%;
+            font-size: 16px;
+            position: relative;
+        }
+
+        .user-message {
+            background: #007bff;
+            color: white;
+            align-self: flex-end;
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.7);
+        }
+
+        .bot-message {
+            background: #292929;
+            color: #fff;
+            align-self: flex-start;
+            border: 1px solid #007bff;
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+        }
+
+        .highlight {
+            background-color: yellow;
+            font-weight: bold;
+            padding: 2px;
+            border-radius: 3px;
+        }
+
+        .input-container {
+            display: flex;
+            padding-top: 10px;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #007bff;
+            border-radius: 5px;
+            font-size: 16px;
+            background-color: #222;
+            color: white;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            box-shadow: 0 0 10px #007bff;
+        }
+
+        button {
+            padding: 12px 15px;
+            margin-left: 10px;
+            border: none;
+            background: linear-gradient(45deg, #007bff, #00d4ff);
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.6);
+        }
+
+        button:hover {
+            background: linear-gradient(45deg, #00d4ff, #007bff);
+            box-shadow: 0 0 20px rgba(0, 123, 255, 1);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <h2>Misogyny Detection Chat</h2>
+        <div class="chat-box" id="chatBox"></div>
+        <div class="input-container">
+            <input type="text" id="inputText" placeholder="Type a message..." onkeypress="handleKeyPress(event)">
+            <button onclick="classifyText()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        async function classifyText() {
+            const inputField = document.getElementById("inputText");
+            const chatBox = document.getElementById("chatBox");
+            const text = inputField.value.trim();
+            if (!text) return;
+
+            // Display user message
+            appendMessage(text, "user-message");
+
+            inputField.value = "";  // Clear input field
+
+            try {
+                const response = await fetch("http://127.0.0.1:5000/predict", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text: text })
+                });
+
+                if (!response.ok) {
+                    throw new Error("HTTP error! Status: " + response.status);
+                }
+
+                const result = await response.json();
+
+                // Construct response message
+                let responseMessage = `
+                    <b>Level 1:</b> ${result["Level 1"]} <br>
+                    <b>Level 2:</b> ${result["Level 2"]} <br>
+                    <b>Level 3:</b> ${result["Level 3"]} <br>
+                `;
+
+                // ✅ Highlight important words
+                let highlightedText = text;
+                result["Highlighted Words"].forEach(word => {
+                    const regex = new RegExp(`\\b${word}\\b`, "gi");  // ✅ Fixed string interpolation bug
+                    highlightedText = highlightedText.replace(regex, `<span class="highlight">${word}</span>`);
+                });
+
+                responseMessage += `<br><b>Highlighted Text:</b> ${highlightedText}`;
+
+                // Display bot message
+                appendMessage(responseMessage, "bot-message");
+
+            } catch (error) {
+                console.error("Error:", error);
+                appendMessage("Error processing request. Please try again.", "bot-message");
+            }
+        }
+
+        function appendMessage(message, className) {
+            const chatBox = document.getElementById("chatBox");
+            const messageDiv = document.createElement("div");
+            messageDiv.classList.add(className);
+            messageDiv.innerHTML = message;  // ✅ Changed from `innerText` to `innerHTML` to render highlights
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;  // Auto-scroll to bottom
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === "Enter") {
+                classifyText();
+            }
+        }
+    </script>
+</body>
+</html>
